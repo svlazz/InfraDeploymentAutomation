@@ -1,0 +1,100 @@
+#INSTALAR KUBERNETES CON PIP EN EL NODO REMOTO
+- name: Check return code of kubectl cluster-info
+  ansible.builtin.shell: kubectl cluster-info
+  register: kubectl_rc
+  ignore_errors: true
+  become: no
+
+- name: Print kubectl_rc
+  ansible.builtin.debug:
+    var: kubectl_rc.rc
+  
+- name: Start the cluster
+  ansible.builtin.shell: sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --cri-socket=unix:///run/containerd/containerd.sock --upload-certs --control-plane-endpoint=k8master
+  when: kubectl_rc.rc != 0
+
+- name: Create .kube folder
+  ansible.builtin.file:
+    path: $HOME/.kube
+    state: directory
+  become_user: ubuntu
+
+- name: Copy admin.conf into .kube
+  ansible.builtin.copy:
+    remote_src: true
+    src: /etc/kubernetes/admin.conf
+    dest: /home/ubuntu/.kube/config
+  become: yes
+- name: Change owner to config
+  ansible.builtin.file:
+    path: /home/ubuntu/.kube/config
+    owner: ubuntu
+    group: ubuntu
+  become: yes
+- name: Get tigera operator yaml
+  ansible.builtin.uri:
+    url: https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/tigera-operator.yaml
+    dest: /home/ubuntu/tigera-operator.yaml
+  become: yes
+
+- name: Create tigera-operator.yaml
+  kubernetes.core.k8s:
+    state: present
+    src: $HOME/tigera-operator.yaml
+  become_user: ubuntu
+
+- name: Get custom resources yaml
+  ansible.builtin.uri:
+    url: https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/custom-resources.yaml
+    dest: $HOME/custom-resources.yaml
+  become_user: ubuntu
+
+
+# - name: Change CIDR to custom-resources.yaml
+#   ansible.builtin.shell: sed -ie 's/192.168.0.0/172.24.0.0/g' custom-resources.yaml
+#   become_user: ubuntu
+#   when: check_cidr.rc != 0
+
+- name: Create custom-resources.yaml
+  kubernetes.core.k8s:
+    state: present
+    src: $HOME/custom-resources.yaml
+  become_user: ubuntu
+
+- name: discovery token
+  ansible.builtin.shell: openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+  register: discovery_token
+  become: no
+
+- name: Kubeadm token create
+  ansible.builtin.command: kubeadm token create
+  register: kubeadm_token
+  become: no
+
+- name: Save output on local file
+  ansible.builtin.file:
+    path: /tmp/tokenkubeadm
+    state: touch
+  delegate_to: localhost
+  become: no
+
+- name: Save output on local file
+  ansible.builtin.file:
+    path: /tmp/discoverytoken
+    state: touch
+  delegate_to: localhost
+  become: no
+
+- name: Print output to a file
+  ansible.builtin.copy:
+    content: "{{ kubeadm_token.stdout }}"
+    dest: /tmp/tokenkubeadm
+  delegate_to: localhost
+  become: no
+
+- name: Print output to a file
+  ansible.builtin.copy:
+    content: "{{ discovery_token.stdout }}"
+    dest: /tmp/discoverytoken
+  delegate_to: localhost
+  become: no

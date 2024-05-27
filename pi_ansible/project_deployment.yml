@@ -1,0 +1,38 @@
+- name: Project deployment
+  hosts: all
+  tasks:
+    - name: KUBERNETES INSTALLATION
+      include_tasks: tasks/k8s/k8s_installation.yaml
+      when: "'k8s' in group_names"
+
+    - name: Cluster creation in master node
+      include_tasks: tasks/k8s/cluster_creation.yaml
+      when: inventory_hostname == 'master'
+
+    - name: Join worker1 in cluster
+      include_tasks: tasks/k8s/join_cluster.yaml
+      when: inventory_hostname == 'worker1'
+
+    - name: Install ArgoCD
+      include_tasks: tasks/k8s/install-argocd.yaml
+      when: inventory_hostname == 'master'
+
+    - name: Install Grafana
+      include_tasks: tasks/k8s/install_grafana.yml
+      when: inventory_hostname == 'master'
+
+    - name: Join worker2 in cluster
+      include_tasks: tasks/k8s/join_cluster.yaml
+      when: inventory_hostname == 'worker2'
+
+    - name: Install Galera
+      include_tasks: tasks/galera/galera-installation.yml
+      when: "'bdgroup' in group_names"
+    
+    - name: Install Haproxy and Redis
+      include_tasks: tasks/proxy/proxy_installation.yaml
+      when: inventory_hostname == 'proxy'
+
+    - name: Deploy application
+      include_tasks: tasks/k8s/deploy_app.yaml
+      when: inventory_hostname == 'master'

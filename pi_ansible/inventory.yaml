@@ -1,0 +1,25 @@
+k8s:
+  hosts:
+    master:
+      ansible_host: ec2-52-90-47-143.compute-1.amazonaws.com
+    worker1:
+      ansible_host: ec2-54-88-78-184.compute-1.amazonaws.com
+    worker2:
+      ansible_host: ec2-54-227-71-4.compute-1.amazonaws.com
+  vars:
+    ansible_user: ubuntu
+    master_ip: 172.31.37.216
+bdgroup:
+  hosts:
+    galera1:
+      ansible_host: ec2-52-202-167-224.compute-1.amazonaws.com
+    galera2:
+      ansible_host: ec2-54-164-81-204.compute-1.amazonaws.com
+  vars:
+    ansible_user: ubuntu
+haproxy:
+  hosts:
+    proxy:
+      ansible_host: ec2-107-22-100-220.compute-1.amazonaws.com
+  vars:
+    ansible_user: ubuntu

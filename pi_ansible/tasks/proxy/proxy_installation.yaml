@@ -1,0 +1,61 @@
+
+- name: Update system
+  ansible.builtin.apt:
+    update_cache: true
+  become: yes
+
+- name: Actualizar todos los paquetes instalados (apt upgrade)
+  ansible.builtin.apt:
+    upgrade: true
+    autoclean: true
+  become: yes
+
+- name: Install Redis Server
+  ansible.builtin.apt:
+    name: redis-server
+    state: present
+  become: yes
+
+- name: Change supervised for systemd
+  ansible.builtin.replace:
+    path: /etc/redis/redis.conf
+    regexp: 'supervised no'
+    replace: 'supervised systemd'
+  become: yes
+
+- name: Config
+  ansible.builtin.replace:
+    path: /etc/redis/redis.conf
+    regexp: '^(bind\s+)127\.0\.0\.1(\s+::1)$'
+    replace: '\g<1>0.0.0.0'
+  become: yes
+
+- name: Restart redis
+  ansible.builtin.systemd_service:
+    name: redis-server
+    state: restarted
+  become: yes
+
+- name: Enable Redis
+  ansible.builtin.systemd_service:
+    name: redis-server
+    enabled: true
+  become: yes
+
+- name: Install Haproxy
+  ansible.builtin.apt:
+    name: haproxy
+    state: present
+  become: yes
+
+- name: Copy config file
+  ansible.builtin.copy:
+    src: haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
+  become: yes
+
+- name: Restart haproxy
+  ansible.builtin.systemd_service:
+    name: haproxy
+    state: restarted
+  become: yes

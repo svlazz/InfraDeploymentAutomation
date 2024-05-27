@@ -1,0 +1,18 @@
+- name: Install Helm
+  ansible.builtin.shell: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+- name: Add Helm Stable Charts
+  ansible.builtin.shell: helm repo add stable https://charts.helm.sh/stable
+
+- name: Add prometheus repository
+  ansible.builtin.shell: helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+- name: Create prometheus namespace
+  kubernetes.core.k8s:
+    name: prometheus
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Install prometheus
+  ansible.builtin.shell: helm install stable prometheus-community/kube-prometheus-stack -n prometheus

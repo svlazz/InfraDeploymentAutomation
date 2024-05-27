@@ -1,0 +1,7 @@
+pi_tf/id_rsa.pub
+pi_tf/terraform.tfstate  
+pi_tf/terraform.tfstate.backup
+pi_tf/.terraform
+.vscode
+pi_tf/.terraform.lock.hcl
+

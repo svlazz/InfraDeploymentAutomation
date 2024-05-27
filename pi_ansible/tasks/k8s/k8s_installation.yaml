@@ -1,0 +1,190 @@
+- name: Actualizar la lista de paquetes (apt update)
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+- name: Actualizar todos los paquetes instalados (apt upgrade)
+  ansible.builtin.apt:
+    upgrade: true
+    autoclean: true
+  become: true
+
+- name: "Create directory /etc/apt/keyrings"
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  become: true
+
+- name: "Get docker gpg"
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
+  become: true
+
+- name: "Change permissions to docker.asc"
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/docker.asc
+    mode: a+r
+  become: true
+
+- name: "Check if file exists"
+  ansible.builtin.stat:
+    path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  register: stat_result
+  become: true
+
+- name: "Dearmor gpg"
+  ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  when: not stat_result.stat.exists
+  become: true
+
+- name: "Add k8s repository"
+  ansible.builtin.shell: echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+  become: true
+
+- name: "Add docker repository"
+  ansible.builtin.shell: echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list
+  become: true
+
+- name: "Update packages"
+  ansible.builtin.apt:
+    update_cache: true
+    name: '*'
+    state: present
+  become: true
+
+- name: "Install packages"
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gnupg2
+      - ca-certificates
+      - apt-transport-https
+      - software-properties-common
+      - kubelet
+      - kubeadm
+      - kubectl
+  become: true
+
+- name: "Hold k8s packages"
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubectl
+    - kubeadm
+  become: true
+
+- name: "Disable swap"
+  ansible.builtin.command: sed -i 's/\/swap.img/#\/swap.img/g' /etc/fstab
+  become: true
+
+- name: "Disable swap with command"
+  ansible.builtin.command: sudo swapoff -a
+  become: true
+
+- name: "Mount"
+  ansible.builtin.command: sudo mount -a
+  become: true
+
+- name: "Install docker packages"
+  ansible.builtin.apt:
+    name: 
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+  become: true
+
+- name: "Enable kernel modules"
+  ansible.builtin.modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+  become: true
+
+- name: "Create kubernetes.conf file"
+  ansible.builtin.file:
+    path: /etc/sysctl.d/kubernetes.conf
+    state: touch
+  become: true
+
+- name: "Sysctl settings"
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.d/kubernetes.conf
+    line: "{{ item }}"
+    insertafter: EOF
+    state: present
+  loop:
+    - "net.ipv4.ip_forward = 1"
+    - "net.bridge.bridge-nf-call-ip6tables = 1"
+    - "net.bridge.bridge-nf-call-iptables = 1"
+  become: true 
+
+- name: "Reload sysctl"
+  ansible.builtin.shell: sudo sysctl --system
+  become: true
+  
+- name: "Create containerd.conf file"
+  ansible.builtin.file:
+    path: /etc/sysctl.d/containerd.conf
+    state: touch
+  become: true
+
+- name: "Configure persistent loading of modules"
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.d/containerd.conf
+    line: "{{ item }}"
+    insertafter: EOF
+  loop:
+    - "overlay"
+    - "br_netfilter"
+  become: true
+
+- name: "Create containerd dir"
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+  become: true
+
+- name: "Configure containerd"
+  ansible.builtin.shell: sudo containerd config default | sudo tee /etc/containerd/config.toml
+  become: true
+
+- name: "Enable containerd"
+  ansible.builtin.systemd_service:
+    name: containerd
+    enabled: true
+  become: true
+
+- name: "Restart containerd"
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: restarted
+  become: true
+
+- name: Add to etchosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars['master'].master_ip }} k8master"
+  become: true
+
+- name: Install pip3
+  ansible.builtin.apt:
+    name: python3-pip
+  become: true
+
+- name: Install kubernetes python package
+  ansible.builtin.pip:
+    name: kubernetes
+  become: true
+
+- name: Install kubernetes python package
+  ansible.builtin.pip:
+    name: PyYAML
+  become: true

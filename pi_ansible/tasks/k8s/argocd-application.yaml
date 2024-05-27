@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: urltopdf
+spec:
+  destination:
+    name: ''
+    namespace: urltopdf
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: ./pi_k8s
+    repoURL: 'https://github.com/svlazz/asir_gitops_cicd_project.git'
+    targetRevision: HEAD
+  project: default
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: urltopdf-secret
+  namespace: urltopdf
+type: Opaque
+data:
+  PASS: ZGFuaWVsc2FsYXM=
+  API_KEY: d2Y5d280NVBRTlJrN3lNYUxSdVBSc2hiVVh4d243R2R0aW4zQ2swNHU0Z2RRMzRJS0dwbThQMWhhaHQwbldPOA==

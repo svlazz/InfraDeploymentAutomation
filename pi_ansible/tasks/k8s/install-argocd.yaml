@@ -1,0 +1,27 @@
+- name: Create ArgoCD Namespace
+  kubernetes.core.k8s:
+    name: argocd
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Get ArgoCD yaml
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    dest: ~/install.yaml
+    mode: '0664'
+
+- name: Apply yaml
+  kubernetes.core.k8s:
+    state: present
+    namespace: argocd
+    src: ~/install.yaml
+
+- name: Remove all NetworkPolicies in argocd
+  command: kubectl delete networkpolicies --all -n argocd
+
+- name: Restart all pods in argocd namespace
+  command: kubectl rollout restart deployment -n argocd
+  
+- name: Restart coredns pod
+  command: kubectl rollout restart deployment -n kube-system

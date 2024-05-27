@@ -1,0 +1,181 @@
+- name: Actualizar la lista de paquetes (apt update)
+  ansible.builtin.apt:
+    update_cache: true
+  become: true
+
+- name: Actualizar todos los paquetes instalados (apt upgrade)
+  ansible.builtin.apt:
+    upgrade: true
+    autoclean: true
+  become: true
+
+- name: Install pip
+  ansible.builtin.apt:
+    name:
+      - pkg-config
+      - python3-pip
+      - python3-mysqldb
+      - default-libmysqlclient-dev
+    state: present
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Install MariaDB 
+  ansible.builtin.apt:
+    name: mariadb-server
+  become: true
+
+- name: Install pymysql package
+  ansible.builtin.pip:
+    name: pymysql
+  become_user: ubuntu
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Change bind-address to allow connections
+  ansible.builtin.replace:
+    path: /etc/mysql/mariadb.conf.d/50-server.cnf
+    regexp: '127\.0\.0\.1'
+    replace: '0.0.0.0'
+  become: true
+
+- name: Restart mariadb
+  ansible.builtin.systemd_service:
+    name: mariadb
+    state: restarted
+  become: true
+
+# - name: Install Redis Server
+#   ansible.builtin.apt:
+#     name: redis-server
+#     state: present
+#   when: inventory_hostname == 'galera1'
+
+# - name: Change supervised for systemd
+#   ansible.builtin.replace:
+#     path: /etc/redis/redis.conf
+#     regexp: 'supervised no'
+#     replace: 'supervised systemd'
+#   when: inventory_hostname == 'galera1'
+
+# - name: Config
+#   ansible.builtin.replace:
+#     path: /etc/redis/redis.conf
+#     regexp: 'bind 127\.0\.0\.1 \:\:1'
+#     replace: '#bind 127\.0\.0\.1 \:\:1'
+#   when: inventory_hostname == 'galera1'
+
+# - name: Restart redis
+#   ansible.builtin.systemd_service:
+#     name: redis-server
+#     state: restarted
+#   when: inventory_hostname == 'galera1'
+
+# - name: Enable Redis
+#   ansible.builtin.systemd_service:
+#     name: redis-server
+#     enabled: true
+#   when: inventory_hostname == 'galera1'
+  
+- name: Create php_app database
+  community.mysql.mysql_db:
+    name: php_app
+    state: present
+    login_user: "root"
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Create dbadmin user
+  community.mysql.mysql_user:
+    name: dbadmin
+    password: danielsalas
+    host: '%'
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    priv: 'php_app.*:ALL'
+    state: present
+    plugin: mysql_native_password
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Copy galera.cnf file
+  ansible.builtin.copy:
+    src: galera.cnf
+    dest: /etc/mysql/conf.d/galera.cnf
+    mode: '0644'
+    owner: ubuntu
+    group: ubuntu
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Copy galera2.cnf to galera2
+  ansible.builtin.copy:
+    src: galera2.cnf
+    dest: /etc/mysql/conf.d/galera.cnf
+    mode: '0644'
+    owner: ubuntu
+    group: ubuntu
+  when: inventory_hostname == 'galera2'
+  become: true
+
+# - name: Copy galera3.cnf to galera3
+#   ansible.builtin.copy:
+#     src: galera3.cnf
+#     dest: /etc/mysql/conf.d/galera.cnf
+#     mode: '0644'
+#     owner: daniel
+#     group: daniel
+#   when: inventory_hostname == 'galera3'
+
+- name: Stop service mariadb on machines
+  ansible.builtin.systemd_service:
+    name: mariadb
+    state: stopped
+  become: true
+
+- name: Install galera 
+  ansible.builtin.shell: galera_new_cluster
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Start service mariadb on machines
+  ansible.builtin.systemd_service:
+    state: started
+    name: mariadb
+  become: true
+
+- name: Copy SQL script
+  ansible.builtin.copy:
+    src: creation.sql
+    dest: /tmp/creation.sql
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Create tables in php_app
+  community.mysql.mysql_db:
+    name: php_app
+    state: import
+    target: /tmp/creation.sql
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Copy script into machine
+  ansible.builtin.copy:
+    src: ini_galera.sh
+    dest: /root/ini_galera.sh
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Make executable
+  ansible.builtin.file:
+    path: /root/ini_galera.sh
+    mode: '+x'
+  when: inventory_hostname == 'galera1'
+  become: true
+
+- name: Exec script every boot
+  ansible.builtin.cron:
+    name: "a job for reboot"
+    special_time: reboot
+    job: "/root/ini_galera.sh"
+  when: inventory_hostname == 'galera1'
+  become: true

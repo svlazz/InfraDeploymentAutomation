@@ -1,0 +1,14 @@
+- name: Copy kubeadm token
+  ansible.builtin.copy:
+    src: /tmp/tokenkubeadm
+    dest: /tmp/tokenkubeadm
+
+
+- name: Copy kubeadm token
+  ansible.builtin.copy:
+    src: /tmp/discoverytoken
+    dest: /tmp/discoverytoken
+
+- name: kubeadm join
+  ansible.builtin.shell: kubeadm join k8master:6443 --token $(cat /tmp/tokenkubeadm)  --discovery-token-ca-cert-hash sha256:$(cat /tmp/discoverytoken)
+  become: yes

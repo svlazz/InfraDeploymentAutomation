@@ -1,0 +1,36 @@
+- name: Get admin password
+  ansible.builtin.shell: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+  register: password_admin
+
+- name: print password
+  ansible.builtin.debug:
+    var: password_admin
+
+- name: Create urltopdf namespace
+  kubernetes.core.k8s:
+    name: urltopdf
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Copy configmap file
+  ansible.builtin.copy:
+    src: ./urltopdf_configmap.yml
+    dest: ~/urltopdf_configmap.yml
+
+- name: Copy argocd application
+  ansible.builtin.copy:
+    src: ./argocd-application.yaml
+    dest: ~/argocd-application.yaml
+
+- name: Apply ArgoCD Application yaml
+  kubernetes.core.k8s:
+    state: present
+    namespace: argocd
+    src: ~/urltopdf_configmap.yml
+
+- name: Apply ArgoCD Application yaml
+  kubernetes.core.k8s:
+    state: present
+    namespace: argocd
+    src: ~/argocd-application.yaml
