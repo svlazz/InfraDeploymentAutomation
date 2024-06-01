@@ -5,5 +5,5 @@ metadata:
   namespace: urltopdf
   name: urltopdf-config
 data:
-  HOST1: "172.31.36.229"
-  REDIS: "tcp://172.31.36.229:6379"
+  HOST1: "ip"
+  REDIS: "tcp://ip:6379"
