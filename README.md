@@ -1,23 +1,22 @@
+# Deployment Automation with Ansible and Terraform
 
-# Automatización de Despliegue con Ansible y Terraform
+This project is designed to automate the deployment of infrastructure and applications using Ansible and Terraform.
 
-Este proyecto está diseñado para automatizar el despliegue de una infraestructura y aplicaciones utilizando Ansible y Terraform.
+## Project Structure
 
-## Estructura del Proyecto
-
-- `.gitignore`: Define los archivos y directorios que deben ser ignorados por Git.
-- `README.md`: Documento de introducción y guía del proyecto.
-- `pi_ansible/`: Contiene todos los playbooks y configuraciones de Ansible.
-  - `inventory.yaml`: Archivo de inventario de Ansible.
-  - `project_deployment.yml`: Playbook principal para el despliegue del proyecto.
-  - `tasks/`: Contiene las tareas específicas de Ansible divididas en subdirectorios:
-    - `galera/`: Scripts y configuraciones para la instalación de Galera Cluster.
+- `.gitignore`: Defines files and directories that should be ignored by Git.
+- `README.md`: Introduction document and project guide.
+- `pi_ansible/`: Contains all Ansible playbooks and configurations.
+  - `inventory.yaml`: Ansible inventory file.
+  - `project_deployment.yml`: Main playbook for project deployment.
+  - `tasks/`: Contains specific Ansible tasks divided into subdirectories:
+    - `galera/`: Scripts and configurations for Galera Cluster installation.
       - `creation.sql`
       - `galera-installation.yml`
       - `galera.cnf`
       - `galera2.cnf`
       - `ini_galera.sh`
-    - `k8s/`: Configuraciones y scripts para la instalación y despliegue en Kubernetes.
+    - `k8s/`: Configurations and scripts for Kubernetes installation and deployment.
       - `argocd-application.yaml`
       - `cluster_creation.yaml`
       - `deploy_app.yaml`
@@ -26,12 +25,12 @@ Este proyecto está diseñado para automatizar el despliegue de una infraestruct
       - `join_cluster.yaml`
       - `k8s_installation.yaml`
       - `urltopdf_configmap.yml`
-    - `proxy/`: Configuraciones para la instalación del proxy.
+    - `proxy/`: Configurations for proxy installation.
       - `haproxy.cfg`
       - `proxy_installation.yaml`
-  - `templates/`: Plantillas utilizadas por Ansible.
+  - `templates/`: Templates used by Ansible.
     - `galera.j2`
-- `pi_tf/`: Contiene los archivos de configuración de Terraform.
+- `pi_tf/`: Contains Terraform configuration files.
   - `galera.tpl`
   - `galera2.tpl`
   - `inventory.tpl`
@@ -39,31 +38,37 @@ Este proyecto está diseñado para automatizar el despliegue de una infraestruct
   - `proxy.tpl`
   - `urltopdf_configmap.tpl`
 
-## Requisitos
+## Requirements
 
 - Ansible 2.9+
 - Terraform 0.12+
-- Acceso a una infraestructura compatible con los scripts y configuraciones del proyecto.
+- Access to an infrastructure compatible with the project's scripts and configurations.
 
-## Uso
+## Usage
 
-### Despliegue con Ansible
+### Deployment with Ansible
 
-1. Configura tu inventario en `pi_ansible/inventory.yaml`.
-2. Ejecuta el playbook principal:
+1. Configure your inventory in `pi_ansible/inventory.yaml`.
+2. Execute the main playbook:
    ```bash
    ansible-playbook pi_ansible/project_deployment.yml
    ```
 
-### Despliegue con Terraform
+### Deployment with Terraform
 
-1. Ajusta las configuraciones necesarias en los archivos `.tpl` en el directorio `pi_tf`.
-2. Inicializa y aplica la configuración de Terraform:
+1. Adjust necessary configurations in `.tpl` files in the `pi_tf` directory.
+2. Initialize and apply Terraform configuration:
    ```bash
    cd pi_tf
    terraform init
    terraform apply
    ```
+
+## Contributions
+
+If you wish to contribute to this project, please fork the repository and submit a pull request with your improvements.
+
+---
 
 ## Contribuciones
 
