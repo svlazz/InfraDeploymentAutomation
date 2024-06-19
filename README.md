@@ -13,8 +13,6 @@ This project is designed to automate the deployment of infrastructure and applic
     - `galera/`: Scripts and configurations for Galera Cluster installation.
       - `creation.sql`
       - `galera-installation.yml`
-      - `galera.cnf`
-      - `galera2.cnf`
       - `ini_galera.sh`
     - `k8s/`: Configurations and scripts for Kubernetes installation and deployment.
       - `argocd-application.yaml`
@@ -24,9 +22,7 @@ This project is designed to automate the deployment of infrastructure and applic
       - `install_grafana.yml`
       - `join_cluster.yaml`
       - `k8s_installation.yaml`
-      - `urltopdf_configmap.yml`
     - `proxy/`: Configurations for proxy installation.
-      - `haproxy.cfg`
       - `proxy_installation.yaml`
   - `templates/`: Templates used by Ansible.
     - `galera.j2`
